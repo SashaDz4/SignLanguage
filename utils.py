@@ -6,6 +6,8 @@ import cv2
 import pandas as pd
 from keras.src.utils import to_categorical
 
+from data.paths import validation_paths, validation_csv_path
+
 # Make numpy values easier to read.
 np.set_printoptions(precision=3, suppress=True)
 
@@ -94,6 +96,7 @@ def process_data(paths, csv_path):
 
 
 def preparation_data():
+    process_data(validation_paths, validation_csv_path)
     # Read CSV file for Training the model using Pandas
     df_train = pd.read_csv("data/hands_SIBI_training.csv", header=0)
     df_train = df_train.sort_values(by=["class_type"])
