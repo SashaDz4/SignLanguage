@@ -1,401 +1,131 @@
-import pandas as pd
 import numpy as np
-import tensorflow as tf
 import mediapipe as mp
 import os
 import csv
-import cv2 as cv
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-from keras.utils import to_categorical
+import cv2
+import pandas as pd
+from keras.src.utils import to_categorical
 
 # Make numpy values easier to read.
 np.set_printoptions(precision=3, suppress=True)
 
+num_classes = 26
+classes = {
+    'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8, 'J': 9,
+    'K': 10, 'L': 11, 'M': 12, 'N': 13, 'O': 14, 'P': 15, 'Q': 16, 'R': 17, 'S': 18,
+    'T': 19, 'U': 20, 'V': 21, 'W': 22, 'X': 23, 'Y': 24, 'Z': 25
+}
 
-# Function to Extract Feature from images or Frame
+
 def extract_feature(image):
     mp_hands = mp.solutions.hands
     mp_drawing = mp.solutions.drawing_utils
     with mp_hands.Hands(static_image_mode=True, max_num_hands=2, min_detection_confidence=0.1) as hands:
-        while True:
-            results = hands.process(cv.flip(cv.cvtColor(image, cv.COLOR_BGR2RGB), 1))
-            image_height, image_width, _ = image.shape
-            # Print handedness (left v.s. right hand).
-            # Caution : Uncomment these print command will resulting long log of mediapipe log
-            # print(f'Handedness of {input_image}:')
-            # print(results.multi_handedness)
+        results = hands.process(cv2.flip(cv2.cvtColor(image, cv2.COLOR_BGR2RGB), 1))
+        image_height, image_width, _ = image.shape
 
-            # Draw hand landmarks of each hand.
-            # Caution : Uncomment these print command will resulting long log of mediapipe log
-            # print(f'Hand landmarks of {input_image}:')
-            if not results.multi_hand_landmarks:
-                # Here we will set whole landmarks into zero as no handpose detected
-                # in a picture wanted to extract.
+        if not results.multi_hand_landmarks:
+            return get_default_landmarks(image)
 
-                # Wrist Hand
-                wristX = 0
-                wristY = 0
-                wristZ = 0
+        annotated_image = cv2.flip(image.copy(), 1)
+        for hand_landmarks in results.multi_hand_landmarks:
+            landmarks = get_hand_landmarks(mp_hands, hand_landmarks, image_width, image_height)
+            mp_drawing.draw_landmarks(annotated_image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
-                # Thumb Finger
-                thumb_CmcX = 0
-                thumb_CmcY = 0
-                thumb_CmcZ = 0
-
-                thumb_McpX = 0
-                thumb_McpY = 0
-                thumb_McpZ = 0
-
-                thumb_IpX = 0
-                thumb_IpY = 0
-                thumb_IpZ = 0
-
-                thumb_TipX = 0
-                thumb_TipY = 0
-                thumb_TipZ = 0
-
-                # Index Finger
-                index_McpX = 0
-                index_McpY = 0
-                index_McpZ = 0
-
-                index_PipX = 0
-                index_PipY = 0
-                index_PipZ = 0
-
-                index_DipX = 0
-                index_DipY = 0
-                index_DipZ = 0
-
-                index_TipX = 0
-                index_TipY = 0
-                index_TipZ = 0
-
-                # Middle Finger
-                middle_McpX = 0
-                middle_McpY = 0
-                middle_McpZ = 0
-
-                middle_PipX = 0
-                middle_PipY = 0
-                middle_PipZ = 0
-
-                middle_DipX = 0
-                middle_DipY = 0
-                middle_DipZ = 0
-
-                middle_TipX = 0
-                middle_TipY = 0
-                middle_TipZ = 0
-
-                # Ring Finger
-                ring_McpX = 0
-                ring_McpY = 0
-                ring_McpZ = 0
-
-                ring_PipX = 0
-                ring_PipY = 0
-                ring_PipZ = 0
-
-                ring_DipX = 0
-                ring_DipY = 0
-                ring_DipZ = 0
-
-                ring_TipX = 0
-                ring_TipY = 0
-                ring_TipZ = 0
-
-                # Pinky Finger
-                pinky_McpX = 0
-                pinky_McpY = 0
-                pinky_McpZ = 0
-
-                pinky_PipX = 0
-                pinky_PipY = 0
-                pinky_PipZ = 0
-
-                pinky_DipX = 0
-                pinky_DipY = 0
-                pinky_DipZ = 0
-
-                pinky_TipX = 0
-                pinky_TipY = 0
-                pinky_TipZ = 0
-
-                # Set image to Zero
-                annotated_image = 0
-
-                # Return Whole Landmark and Image
-                return (wristX, wristY, wristZ,
-                        thumb_CmcX, thumb_CmcY, thumb_CmcZ,
-                        thumb_McpX, thumb_McpY, thumb_McpZ,
-                        thumb_IpX, thumb_IpY, thumb_IpZ,
-                        thumb_TipX, thumb_TipY, thumb_TipZ,
-                        index_McpX, index_McpY, index_McpZ,
-                        index_PipX, index_PipY, index_PipZ,
-                        index_DipX, index_DipY, index_DipZ,
-                        index_TipX, index_TipY, index_TipZ,
-                        middle_McpX, middle_McpY, middle_McpZ,
-                        middle_PipX, middle_PipY, middle_PipZ,
-                        middle_DipX, middle_DipY, middle_DipZ,
-                        middle_TipX, middle_TipY, middle_TipZ,
-                        ring_McpX, ring_McpY, ring_McpZ,
-                        ring_PipX, ring_PipY, ring_PipZ,
-                        ring_DipX, ring_DipY, ring_DipZ,
-                        ring_TipX, ring_TipY, ring_TipZ,
-                        pinky_McpX, pinky_McpY, pinky_McpZ,
-                        pinky_PipX, pinky_PipY, pinky_PipZ,
-                        pinky_DipX, pinky_DipY, pinky_DipZ,
-                        pinky_TipX, pinky_TipY, pinky_TipZ,
-                        annotated_image)
-
-            annotated_image = cv.flip(image.copy(), 1)
-            for hand_landmarks in results.multi_hand_landmarks:
-                # Wrist Hand /  Pergelangan Tangan
-                wristX = hand_landmarks.landmark[mp_hands.HandLandmark.WRIST].x * image_width
-                wristY = hand_landmarks.landmark[mp_hands.HandLandmark.WRIST].y * image_height
-                wristZ = hand_landmarks.landmark[mp_hands.HandLandmark.WRIST].z
-
-                # Thumb Finger / Ibu Jari
-                thumb_CmcX = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_CMC].x * image_width
-                thumb_CmcY = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_CMC].y * image_height
-                thumb_CmcZ = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_CMC].z
-
-                thumb_McpX = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_MCP].x * image_width
-                thumb_McpY = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_MCP].y * image_height
-                thumb_McpZ = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_MCP].z
-
-                thumb_IpX = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_IP].x * image_width
-                thumb_IpY = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_IP].y * image_height
-                thumb_IpZ = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_IP].z
-
-                thumb_TipX = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP].x * image_width
-                thumb_TipY = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP].y * image_height
-                thumb_TipZ = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP].z
-
-                # Index Finger / Jari Telunjuk
-                index_McpX = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP].x * image_width
-                index_McpY = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP].y * image_height
-                index_McpZ = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP].z
-
-                index_PipX = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_PIP].x * image_width
-                index_PipY = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_PIP].y * image_height
-                index_PipZ = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_PIP].z
-
-                index_DipX = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_DIP].x * image_width
-                index_DipY = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_DIP].y * image_height
-                index_DipZ = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_DIP].z
-
-                index_TipX = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].x * image_width
-                index_TipY = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y * image_height
-                index_TipZ = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].z
-
-                # Middle Finger / Jari Tengah
-                middle_McpX = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP].x * image_width
-                middle_McpY = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP].y * image_height
-                middle_McpZ = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP].z
-
-                middle_PipX = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_PIP].x * image_width
-                middle_PipY = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_PIP].y * image_height
-                middle_PipZ = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_PIP].z
-
-                middle_DipX = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_DIP].x * image_width
-                middle_DipY = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_DIP].y * image_height
-                middle_DipZ = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_DIP].z
-
-                middle_TipX = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_TIP].x * image_width
-                middle_TipY = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_TIP].y * image_height
-                middle_TipZ = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_TIP].z
-
-                # Ring Finger / Jari Cincin
-                ring_McpX = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_MCP].x * image_width
-                ring_McpY = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_MCP].y * image_height
-                ring_McpZ = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_MCP].z
-
-                ring_PipX = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_PIP].x * image_width
-                ring_PipY = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_PIP].y * image_height
-                ring_PipZ = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_PIP].z
-
-                ring_DipX = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_DIP].x * image_width
-                ring_DipY = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_DIP].y * image_height
-                ring_DipZ = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_DIP].z
-
-                ring_TipX = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_TIP].x * image_width
-                ring_TipY = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_TIP].y * image_height
-                ring_TipZ = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_TIP].z
-
-                # Pinky Finger / Jari Kelingking
-                pinky_McpX = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_MCP].x * image_width
-                pinky_McpY = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_MCP].y * image_height
-                pinky_McpZ = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_MCP].z
-
-                pinky_PipX = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_PIP].x * image_width
-                pinky_PipY = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_PIP].y * image_height
-                pinky_PipZ = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_PIP].z
-
-                pinky_DipX = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_DIP].x * image_width
-                pinky_DipY = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_DIP].y * image_height
-                pinky_DipZ = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_DIP].z
-
-                pinky_TipX = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_TIP].x * image_width
-                pinky_TipY = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_TIP].y * image_height
-                pinky_TipZ = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_TIP].z
-
-                # Draw the Skeleton
-                mp_drawing.draw_landmarks(annotated_image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-
-            return (wristX, wristY, wristZ,
-                    thumb_CmcX, thumb_CmcY, thumb_CmcZ,
-                    thumb_McpX, thumb_McpY, thumb_McpZ,
-                    thumb_IpX, thumb_IpY, thumb_IpZ,
-                    thumb_TipX, thumb_TipY, thumb_TipZ,
-                    index_McpX, index_McpY, index_McpZ,
-                    index_PipX, index_PipY, index_PipZ,
-                    index_DipX, index_DipY, index_DipZ,
-                    index_TipX, index_TipY, index_TipZ,
-                    middle_McpX, middle_McpY, middle_McpZ,
-                    middle_PipX, middle_PipY, middle_PipZ,
-                    middle_DipX, middle_DipY, middle_DipZ,
-                    middle_TipX, middle_TipY, middle_TipZ,
-                    ring_McpX, ring_McpY, ring_McpZ,
-                    ring_PipX, ring_PipY, ring_PipZ,
-                    ring_DipX, ring_DipY, ring_DipZ,
-                    ring_TipX, ring_TipY, ring_TipZ,
-                    pinky_McpX, pinky_McpY, pinky_McpZ,
-                    pinky_PipX, pinky_PipY, pinky_PipZ,
-                    pinky_DipX, pinky_DipY, pinky_DipZ,
-                    pinky_TipX, pinky_TipY, pinky_TipZ,
-                    annotated_image)
+        return landmarks, annotated_image
 
 
-# Function to create CSV file or add dataset to the existed CSV file
-def toCSV(filecsv, class_type,
-          wristX, wristY, wristZ,
-          thumb_CmcX, thumb_CmcY, thumb_CmcZ,
-          thumb_McpX, thumb_McpY, thumb_McpZ,
-          thumb_IpX, thumb_IpY, thumb_IpZ,
-          thumb_TipX, thumb_TipY, thumb_TipZ,
-          index_McpX, index_McpY, index_McpZ,
-          index_PipX, index_PipY, index_PipZ,
-          index_DipX, index_DipY, index_DipZ,
-          index_TipX, index_TipY, index_TipZ,
-          middle_McpX, middle_McpY, middle_McpZ,
-          middle_PipX, middle_PipY, middle_PipZ,
-          middle_DipX, middle_DipY, middle_DipZ,
-          middle_TipX, middle_TipY, middle_TipZ,
-          ring_McpX, ring_McpY, ring_McpZ,
-          ring_PipX, ring_PipY, ring_PipZ,
-          ring_DipX, ring_DipY, ring_DipZ,
-          ring_TipX, ring_TipY, ring_TipZ,
-          pinky_McpX, pinky_McpY, pinky_McpZ,
-          pinky_PipX, pinky_PipY, pinky_PipZ,
-          pinky_DipX, pinky_DipY, pinky_DipZ,
-          pinky_TipX, pinky_TipY, pinky_TipZ):
+def get_default_landmarks(image):
+    # Set all landmarks to zero
+    landmarks = [0] * 63
+    annotated_image = 0
+    return landmarks, annotated_image
+
+
+def get_hand_landmarks(mp_hands, hand_landmarks, image_width, image_height):
+    landmarks = []
+    for landmark_type in mp_hands.HandLandmark:
+        landmark = hand_landmarks.landmark[landmark_type]
+        landmarks.extend([landmark.x * image_width, landmark.y * image_height, landmark.z])
+    return landmarks
+
+
+def to_csv(filecsv, class_type, *landmarks):
+    coords = ['X', 'Y', 'Z']
+    header = ["class_type"]
+    header.extend([f"{part}_{coord}" for part in mp.solutions.hands.HandLandmark._member_names_ for coord in coords])
     if os.path.isfile(filecsv):
-        # print ("File exist thus shall write append to the file")
-        with open(filecsv, 'a+', newline='') as file:
-            # Create a writer object from csv module
-            writer = csv.writer(file)
-            writer.writerow([class_type,
-                             wristX, wristY, wristZ,
-                             thumb_CmcX, thumb_CmcY, thumb_CmcZ,
-                             thumb_McpX, thumb_McpY, thumb_McpZ,
-                             thumb_IpX, thumb_IpY, thumb_IpZ,
-                             thumb_TipX, thumb_TipY, thumb_TipZ,
-                             index_McpX, index_McpY, index_McpZ,
-                             index_PipX, index_PipY, index_PipZ,
-                             index_DipX, index_DipY, index_DipZ,
-                             index_TipX, index_TipY, index_TipZ,
-                             middle_McpX, middle_McpY, middle_McpZ,
-                             middle_PipX, middle_PipY, middle_PipZ,
-                             middle_DipX, middle_DipY, middle_DipZ,
-                             middle_TipX, middle_TipY, middle_TipZ,
-                             ring_McpX, ring_McpY, ring_McpZ,
-                             ring_PipX, ring_PipY, ring_PipZ,
-                             ring_DipX, ring_DipY, ring_DipZ,
-                             ring_TipX, ring_TipY, ring_TipZ,
-                             pinky_McpX, pinky_McpY, pinky_McpZ,
-                             pinky_PipX, pinky_PipY, pinky_PipZ,
-                             pinky_DipX, pinky_DipY, pinky_DipZ,
-                             pinky_TipX, pinky_TipY, pinky_TipZ])
+        append_to_csv(filecsv, header, class_type, *landmarks)
     else:
-        # print ("File not exist thus shall create new file as", filecsv)
-        with open(filecsv, 'w', newline='') as file:
-            # Create a writer object from csv module
-            writer = csv.writer(file)
-            writer.writerow(["class_type",
-                             "wristX", "wristY", "wristZ",
-                             "thumb_CmcX", "thumb_CmcY", "thumb_CmcZ",
-                             "thumb_McpX", "thumb_McpY", "thumb_McpZ",
-                             "thumb_IpX", "thumb_IpY", "thumb_IpZ",
-                             "thumb_TipX", "thumb_TipY", "thumb_TipZ",
-                             "index_McpX", "index_McpY", "index_McpZ",
-                             "index_PipX", "index_PipY", "index_PipZ",
-                             "index_DipX", "index_DipY", "index_DipZ",
-                             "index_TipX", "index_TipY", "index_TipZ",
-                             "middle_McpX", "middle_McpY", "middle_McpZ",
-                             "middle_PipX", "middle_PipY", "middle_PipZ",
-                             "middle_DipX", "middle_DipY", "middle_DipZ",
-                             "middle_TipX", "middle_TipY", "middle_TipZ",
-                             "ring_McpX", "ring_McpY", "ring_McpZ",
-                             "ring_PipX", "ring_PipY", "ring_PipZ",
-                             "ring_DipX", "ring_DipY", "ring_DipZ",
-                             "ring_TipX", "ring_TipY", "ring_TipZ",
-                             "pinky_McpX", "pinky_McpY", "pinky_McpZ",
-                             "pinky_PipX", "pinky_PipY", "pinky_PipZ",
-                             "pinky_DipX", "pinky_DipY", "pinky_DipZ",
-                             "pinky_TipX", "pinky_TipY", "pinky_TipZ"])
-            writer.writerow([class_type,
-                             wristX, wristY, wristZ,
-                             thumb_CmcX, thumb_CmcY, thumb_CmcZ,
-                             thumb_McpX, thumb_McpY, thumb_McpZ,
-                             thumb_IpX, thumb_IpY, thumb_IpZ,
-                             thumb_TipX, thumb_TipY, thumb_TipZ,
-                             index_McpX, index_McpY, index_McpZ,
-                             index_PipX, index_PipY, index_PipZ,
-                             index_DipX, index_DipY, index_DipZ,
-                             index_TipX, index_TipY, index_TipZ,
-                             middle_McpX, middle_McpY, middle_McpZ,
-                             middle_PipX, middle_PipY, middle_PipZ,
-                             middle_DipX, middle_DipY, middle_DipZ,
-                             middle_TipX, middle_TipY, middle_TipZ,
-                             ring_McpX, ring_McpY, ring_McpZ,
-                             ring_PipX, ring_PipY, ring_PipZ,
-                             ring_DipX, ring_DipY, ring_DipZ,
-                             ring_TipX, ring_TipY, ring_TipZ,
-                             pinky_McpX, pinky_McpY, pinky_McpZ,
-                             pinky_PipX, pinky_PipY, pinky_PipZ,
-                             pinky_DipX, pinky_DipY, pinky_DipZ,
-                             pinky_TipX, pinky_TipY, pinky_TipZ])
+        create_new_csv(filecsv, header, class_type, *landmarks)
 
 
-num_classes = 26
-classes = {
-    'A': 0,
-    'B': 1,
-    'C': 2,
-    'D': 3,
-    'E': 4,
-    'F': 5,
-    'G': 6,
-    'H': 7,
-    'I': 8,
-    'J': 9,
-    'K': 10,
-    'L': 11,
-    'M': 12,
-    'N': 13,
-    'O': 14,
-    'P': 15,
-    'Q': 16,
-    'R': 17,
-    'S': 18,
-    'T': 19,
-    'U': 20,
-    'V': 21,
-    'W': 22,
-    'X': 23,
-    'Y': 24,
-    'Z': 25
-}
+def append_to_csv(filecsv, header, class_type, *data):
+    with open(filecsv, 'a+', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([class_type, *data])
+
+
+def create_new_csv(filecsv, header, class_type, *data):
+    with open(filecsv, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(header)
+        writer.writerow([class_type, *data])
+
+
+def process_data(paths, csv_path):
+    if not os.path.exists(csv_path):
+        print("The CSV file does not exist:", csv_path, ", going to create it after extraction")
+
+        for dirlist in os.listdir(paths):
+            for root, directories, filenames in os.walk(os.path.join(paths, dirlist)):
+                print("Inside Folder", dirlist, "Consisting of:", len(filenames), "Imageset")
+                for filename in filenames:
+                    if filename.lower().endswith((".jpg", ".jpeg")):
+                        image_path = os.path.join(root, filename)
+                        features = extract_feature(cv2.imread(image_path))
+
+                        if features and features[0] != 0:  # Assuming wristX is the first element of features
+                            to_csv(csv_path, dirlist, *features)
+                        else:
+                            print(image_path, "Hand does not have landmarks")
+
+        print("===================Feature Extraction is Completed===================")
+
+
+def preparation_data():
+    # Read CSV file for Training the model using Pandas
+    df_train = pd.read_csv("data/hands_SIBI_training.csv", header=0)
+    df_train = df_train.sort_values(by=["class_type"])
+
+    # Read CSV file for Validation or Testing the Model using Pandas
+    df_test = pd.read_csv("data/hands_SIBI_validation.csv", header=0)
+    df_test = df_test.sort_values(by=["class_type"])
+
+    # Put Categorical using Pandas
+    df_train["class_type"] = pd.Categorical(df_train["class_type"])
+    df_train["class_type"] = df_train.class_type.cat.codes
+
+    df_test["class_type"] = pd.Categorical(df_test["class_type"])
+    df_test["class_type"] = df_test.class_type.cat.codes
+
+    # Copy Label and Feature for training
+    y_train = df_train.pop("class_type")
+    x_train = df_train.copy()
+
+    y_test = df_test.pop("class_type")
+    x_test = df_test.copy()
+
+    # Copied Features turn to Array by using NumPy
+    x_train = np.array(x_train)
+    x_test = np.array(x_test)
+
+    # Since the array shape is 1x1, we must turn it into 1x10x1 so we can feed it into the model
+    x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
+    x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
+
+    # Using the Keras.Utils to put the label categorically
+    y_train = to_categorical(y_train, num_classes)
+    y_test = to_categorical(y_test, num_classes)
+
+    return x_train, y_train, x_test, y_test
