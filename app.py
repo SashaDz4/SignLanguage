@@ -8,16 +8,20 @@ app = Flask(__name__)
 # Відкриваємо відеострім з першої доступної камери
 cap = cv2.VideoCapture(0)
 model = LetterDetector((63, 1))
-model.load('model.h5')
+model.load('model1.h5')
+
 
 def generate_frames():
+    count = 0
     while True:
         ret, frame = cap.read()
         if not ret:
             break
         else:
-            prediction = model.predict_classes(frame)
-            cv2.putText(frame, prediction, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            count += 1
+            if count % 10 == 0:
+                prediction = model.predict_classes(frame)
+                cv2.putText(frame, prediction, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             ret, buffer = cv2.imencode('.jpg', frame)
             frame = buffer.tobytes()
             yield (b'--frame\r\n'

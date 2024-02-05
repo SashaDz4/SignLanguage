@@ -191,19 +191,23 @@ y_test = to_categorical(y_test, num_classes)
 
 # Directly from Imageset Dataset Testing
 # Load Image and do Feature Extraction
-path_to_image = "/home/oleksandr/Downloads/archive (3)/SIBI_datasets_LEMLITBANG_SIBI_R_90.10_V02/SIBI_datasets_LEMLITBANG_SIBI_R_90.10_V02/test/F (3).jpg"
+path_to_image = "/home/oleksandr/Downloads/test_img_E.jpg"
+path_to_image = "/home/oleksandr/Downloads/archive (3)/SIBI_datasets_LEMLITBANG_SIBI_R_90.10_V02/SIBI_datasets_LEMLITBANG_SIBI_R_90.10_V02/test/Q (4).jpg"
 
 model = LetterDetector(x_train.shape[1:3])
 # model.train(x_train, y_train, x_test, y_test, epochs=100, batch_size=32)
 # model.summary()
-# model.save("model.h5")
-model.load("model.h5")
+# model.save("model1.h5")
+model.load("model1.h5")
 
 input_IMG = cv.imread(path_to_image)
 
 # Print the Prediction
-print(model.predict(input_IMG))
-print(model.predict_classes(input_IMG))
+predict = model.predict_classes(input_IMG)
+print("Prediction : ", predict)
+
+cv.putText(input_IMG, predict, (10, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+cv.imshow("Prediction", input_IMG)
 
 # Print prediction using defined Classes
 predictions = model.predict_classes(input_IMG)
