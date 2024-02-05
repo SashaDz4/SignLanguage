@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letter Recognition</title>
+</head>
+<body>
+    <h1>Letter Recognition</h1>
+    <img id="video_feed" width="640" height="480" src="{{ url_for('video_feed') }}" alt="Video Feed">
+    <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    <div id="prediction"></div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const predictionDiv = document.getElementById('prediction');
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                video.srcObject = stream;
+            });
+
+        video.addEventListener('play', () => {
+            const draw = () => {
+                context.drawImage(video, 0, 0, 640, 480);
+                // Тут ви можете викликати функцію для передачі зображення на сервер для розпізнавання
+                // та виведення результатів на сторінку
+                requestAnimationFrame(draw);
+            };
+            draw();
+        });
+    </script>
+</body>
+</html>
