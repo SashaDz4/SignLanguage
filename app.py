@@ -5,10 +5,9 @@ from model import LetterDetector
 
 app = Flask(__name__)
 
-# Відкриваємо відеострім з першої доступної камери
 cap = cv2.VideoCapture(0)
 model = LetterDetector((63, 1))
-model.load('model1.h5')
+model.load('models/model1.h5')
 
 
 def generate_frames():

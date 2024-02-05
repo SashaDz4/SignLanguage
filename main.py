@@ -11,7 +11,7 @@ from utils import extract_feature, toCSV, classes, num_classes
 # Extract Feature for Training
 # We will using SIBI datasets version V02
 paths = "/home/oleksandr/Downloads/archive (3)/SIBI_datasets_LEMLITBANG_SIBI_R_90.10_V02/SIBI_datasets_LEMLITBANG_SIBI_R_90.10_V02/training/"
-csv_path = "/home/oleksandr/SignLanguage/hands_SIBI_training.csv"
+csv_path = "/data/hands_SIBI_training.csv"
 
 if not os.path.exists(csv_path):
     print("The CSV file does not exist", csv_path, ",Going Create after Extraction")
@@ -77,7 +77,7 @@ if not os.path.exists(csv_path):
 # Extract Feature for Validation
 # We will using SIBI datasets version V02
 paths = "/home/oleksandr/Downloads/archive (3)/SIBI_datasets_LEMLITBANG_SIBI_R_90.10_V02/SIBI_datasets_LEMLITBANG_SIBI_R_90.10_V02/validation/"
-csv_path = "/home/oleksandr/SignLanguage/hands_SIBI_training.csv"
+csv_path = "/data/hands_SIBI_training.csv"
 
 if not os.path.exists(csv_path):
     print("The CSV file does not exist", csv_path, ",Going Create after Extraction")
@@ -141,13 +141,13 @@ if not os.path.exists(csv_path):
     print("===================Feature Extraction for VALIDATION is Completed===================")
 
 # Read CSV file for Training the model using Pandas
-df_train = pd.read_csv("hands_SIBI_training.csv", header=0)
+df_train = pd.read_csv("data/hands_SIBI_training.csv", header=0)
 
 # First we must sort the values of the dataset according to the Alphabets
 df_train = df_train.sort_values(by=["class_type"])
 
 # Read CSV file for Validation or Testing the Model using Pandas
-df_test = pd.read_csv("hands_SIBI_validation.csv", header=0)
+df_test = pd.read_csv("data/hands_SIBI_validation.csv", header=0)
 
 # First we must sort the values of the dataset according to the Alphabets
 df_test = df_test.sort_values(by=["class_type"])
@@ -198,7 +198,7 @@ model = LetterDetector(x_train.shape[1:3])
 # model.train(x_train, y_train, x_test, y_test, epochs=100, batch_size=32)
 # model.summary()
 # model.save("model1.h5")
-model.load("model1.h5")
+model.load("models/model1.h5")
 
 input_IMG = cv.imread(path_to_image)
 
