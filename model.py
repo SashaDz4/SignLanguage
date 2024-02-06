@@ -2,7 +2,16 @@ import numpy as np
 import tensorflow as tf
 
 from operator import itemgetter as ig
-from utils import num_classes, classes, extract_feature
+from utils import num_classes, classes, extract_feature, module
+
+
+class Letter:
+    def __init__(self, name, confidence):
+        self.name = name
+        self.confidence = confidence
+
+    def __repr__(self):
+        return f"{self.name} {self.confidence * 100:.0f}%"
 
 
 class LetterDetector(tf.keras.Model):
@@ -51,13 +60,17 @@ class LetterDetector(tf.keras.Model):
         self.model.summary()
 
     def predict_classes(self, x):
-        # if x is image
         if len(x.shape) == 3:
             x = self.preprocess(x)
-        return ig(*np.argmax(self.predict(x), axis=1).astype(int))([*classes.keys()])
+        if not np.max(x):
+            return Letter("", 0)
+        prediction = self.predict(x)
+        letter = ig(*np.argmax(prediction, axis=1).astype(int))([*classes.keys()])
+        confidence = np.max(prediction)
+        return Letter(letter, confidence)
 
     def compile(self, optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy']):
         self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     def preprocess(self, x):
-        return np.array([extract_feature(x)[0]])
+        return np.array([extract_feature(x)[0]]).reshape(-1, 63, 1)

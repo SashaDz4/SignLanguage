@@ -1,17 +1,20 @@
 from flask import Flask, render_template, Response
 import cv2
 
-from model import LetterDetector
+from model import LetterDetector, Letter
+from utils import put_ukranian_labels
 
 app = Flask(__name__)
 
-cap = cv2.VideoCapture(0)
+video_path = "/home/oleksandr/Downloads/Telegram Desktop/IMG_0367.MOV"
+cap = cv2.VideoCapture(video_path)
 model = LetterDetector((63, 1))
 model.load('models/model1.h5')
 
 
 def generate_frames():
     count = 0
+    letter = Letter("", 0.8)
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -19,8 +22,10 @@ def generate_frames():
         else:
             count += 1
             if count % 10 == 0:
-                prediction = model.predict_classes(frame)
-                cv2.putText(frame, prediction, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                letter = model.predict_classes(frame)
+                print(f"Detected letter: {letter}")
+            frame = put_ukranian_labels(frame, letter.name, letter.confidence)
+
             ret, buffer = cv2.imencode('.jpg', frame)
             frame = buffer.tobytes()
             yield (b'--frame\r\n'
