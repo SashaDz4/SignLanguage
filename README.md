@@ -36,6 +36,8 @@ You can view a demonstration of the project usage in the following GIF:
 
 ![Ukrainian Sign Alphabet Recognition Demo](demo.gif)
 
+**Note:** This demo GIF was captured on a laptop with Intel Core i7 and 16GB RAM. Due to these specifications, the streaming capability of the application could achieve around 5 FPS.
+
 ## Note
 
 Make sure to customize the paths and configurations according to your setup before running the code.
