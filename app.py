@@ -7,10 +7,10 @@ from utils import put_ukranian_labels
 
 app = Flask(__name__)
 
-video_path = "/home/oleksandr/Downloads/Telegram Desktop/IMG_0367.MOV"
+video_path = ""
 cap = cv2.VideoCapture(0)
 model = LetterDetector((63, 1))
-model.load('models/model_my1.h5')
+model.load('models/model.h5')
 
 
 def generate_frames():
