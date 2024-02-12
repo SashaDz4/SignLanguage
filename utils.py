@@ -36,7 +36,7 @@ reverse_classes = {0: "А", 1: "Б", 2: "В", 3: "Г", 4: "Д", 5: "Е", 6: "Є"
 
 def extract_feature(image):
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    flipped_image = cv2.flip(rgb_image, 1)
+    flipped_image = rgb_image.copy()
     results = hands.process(flipped_image)
     image_height, image_width, _ = image.shape
 
@@ -50,7 +50,7 @@ def extract_feature(image):
         landmarks = get_hand_landmarks(hands_module, hand_landmarks, image_width, image_height)
         drawing_utils.draw_landmarks(annotated_image, hand_landmarks, hands_module.HAND_CONNECTIONS)
 
-    return landmarks, annotated_image
+    return landmarks, cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR)
 
 
 def get_default_landmarks(image):

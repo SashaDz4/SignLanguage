@@ -12,7 +12,7 @@ model.load("models/model_my.h5")
 input_IMG = cv2.imread(path_to_image)
 
 # Print the Prediction
-letter = model.predict_classes(input_IMG)
+letter, img = model.predict_classes(input_IMG)
 print("Prediction : ", letter)
 
 input_IMG = cv2.resize(input_IMG, (640, 480))
@@ -33,7 +33,7 @@ while True:
         count += 1
         if count % 10 == 0:
             start = time.time()
-            letter = model.predict_classes(frame)
+            letter, img = model.predict_classes(frame)
             end = time.time()
             print(f"Detected letter: {letter}, time: {end - start}")
         frame = put_ukranian_labels(frame, letter.name, letter.confidence)

@@ -60,17 +60,21 @@ class LetterDetector(tf.keras.Model):
         self.model.summary()
 
     def predict_classes(self, x):
+        img = x.copy()
         if len(x.shape) == 3:
-            x = self.preprocess(x)
+            x, img = self.preprocess(x)
         if not np.max(x):
-            return Letter("", 0)
+            return Letter("", 0), img
         prediction = self.predict(x)
         letter = ig(*np.argmax(prediction, axis=1).astype(int))([*classes.keys()])
         confidence = np.max(prediction)
-        return Letter(letter, confidence)
+        return Letter(letter, confidence), img
 
     def compile(self, optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy']):
         self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     def preprocess(self, x):
-        return np.array([extract_feature(x)[0]]).reshape(-1, 63, 1)
+        feature = extract_feature(x)
+        image = feature[1]
+        feature = feature[0]
+        return np.array([feature]).reshape(1, 63, 1), image
